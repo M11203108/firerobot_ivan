@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<library path="motor_base">
+  <class name="motor_base/MotorSet"
+         type="motor_base::MotorSet"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>ROS2 控制插件，管理 ZLAC8015D 馬達控制器。</description>
+  </class>
+</library>

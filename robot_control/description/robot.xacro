@@ -1,0 +1,133 @@
+<?xml version="1.0" ?>
+<robot name="robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <!-- <xacro:arg name="use_mock_hardware" default="false"/> -->
+    <!-- <xacro:include filename="$(find realsense2_description)/urdf/_d435i.urdf.xacro"/> -->
+    <!-- 參數 -->
+    <xacro:property name="wheel_radius" value="0.09"/>
+    <xacro:property name="wheel_length" value="0.073"/>
+
+    <xacro:property name="base_size_x" value="1.08"/>
+    <xacro:property name="base_size_y" value="0.76"/>
+    <xacro:property name="base_height" value="0.05"/>
+
+    <xacro:property name="wheel_offset_x" value="0.325"/>
+    <xacro:property name="wheel_offset_y" value="0.3285"/>
+    <xacro:property name="wheel_z" value="0.09"/>
+    
+    <xacro:property name="Lx" value="0.65"/>
+    <xacro:property name="Ly" value="0.665"/>
+
+    <!-- 機器人底盤 -->
+    <link name="base_link">
+        <visual>
+            <origin xyz="0 0 0.18" rpy="0 0 0" />
+            <geometry>
+                <box size="${base_size_x} ${base_size_y} ${base_height}"/>
+            </geometry>
+            <material name="white">
+                <color rgba="1 1 1 1"/>
+            </material>
+        </visual>
+    </link> 
+
+    <!-- **前輪 (主動輪) ** -->
+    <joint name="left_wheel_joint" type="continuous">
+        <origin xyz="${wheel_offset_x} ${wheel_offset_y} ${wheel_z}" rpy="1.57 0 0"/>
+        <parent link="base_link"/>
+        <child link="left_wheel"/>
+        <axis xyz="0 1 0"/>
+    </joint>
+
+    <link name="left_wheel">
+        <visual>
+            <geometry>
+                <cylinder radius="${wheel_radius}" length="${wheel_length}"/>
+            </geometry>
+            <material name="black">
+                <color rgba="0 0 0 1"/>
+            </material>
+        </visual>
+    </link>
+
+    <joint name="right_wheel_joint" type="continuous">
+        <origin xyz="${wheel_offset_x} -${wheel_offset_y} ${wheel_z}" rpy="1.57 0 0"/>
+        <parent link="base_link"/>
+        <child link="right_wheel"/>
+        <axis xyz="0 1 0"/>
+    </joint>
+
+    <link name="right_wheel">
+        <visual>
+            <geometry>
+                <cylinder radius="${wheel_radius}" length="${wheel_length}"/>
+            </geometry>
+            <material name="black">
+                <color rgba="0 0 0 1"/>
+            </material>
+        </visual>
+    </link>
+
+    <!-- **後輪 (固定輪) ** -->
+    <joint name="left_rear_wheel_joint" type="fixed">
+        <origin xyz="-${wheel_offset_x} ${wheel_offset_y} ${wheel_z}" rpy="1.57 0 0"/>
+        <parent link="base_link"/>
+        <child link="left_rear_wheel"/>
+    </joint>
+
+    <link name="left_rear_wheel">
+        <visual>
+            <geometry>
+                <cylinder radius="${wheel_radius}" length="${wheel_length}"/>
+            </geometry>
+            <material name="black">
+                <color rgba="0 0 0 1"/>
+            </material>
+        </visual>
+    </link>
+
+    <joint name="right_rear_wheel_joint" type="fixed">
+        <origin xyz="-${wheel_offset_x} -${wheel_offset_y} ${wheel_z}" rpy="1.57 0 0"/>
+        <parent link="base_link"/>
+        <child link="right_rear_wheel"/>
+    </joint>
+
+    <link name="right_rear_wheel">
+        <visual>
+            <geometry>
+                <cylinder radius="${wheel_radius}" length="${wheel_length}"/>
+            </geometry>
+            <material name="black">
+                <color rgba="0 0 0 1"/>
+            </material>
+        </visual>
+    </link>
+
+    
+
+    <!-- **ros2_control 設定** -->
+    <ros2_control name="MotorSet" type="system">
+            <hardware>
+                <plugin>motor_base/MotorSet</plugin>
+                <param name="wheel_radius">${wheel_radius}</param>
+                <param name="Lx">${Lx}</param>
+                <param name="Ly">${Ly}</param>
+            </hardware>
+
+        <!-- 只控制前輪 -->
+        <joint name="left_wheel_joint">
+            <command_interface name="velocity"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+
+        <joint name="right_wheel_joint">
+            <command_interface name="velocity"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+      
+
+    </ros2_control>
+
+</robot>

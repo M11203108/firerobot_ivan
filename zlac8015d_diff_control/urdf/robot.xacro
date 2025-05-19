@@ -1,0 +1,155 @@
+<?xml version="1.0" ?>
+<robot name="robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <!-- 參數 -->
+    <xacro:property name="wheel_radius" value="0.09"/>
+    <xacro:property name="wheel_length" value="0.073"/>
+
+    <xacro:property name="base_size_x" value="1.08"/>
+    <xacro:property name="base_size_y" value="0.76"/>
+    <xacro:property name="base_height" value="0.05"/>
+
+    <xacro:property name="wheel_offset_x" value="0.325"/>
+    <xacro:property name="wheel_offset_y" value="0.3285"/>
+    <xacro:property name="wheel_z" value="0.09"/>
+    
+    <xacro:property name="Lx" value="0.65"/>
+    <xacro:property name="Ly" value="0.661"/>
+
+    <xacro:property name="laser_x" value="0.435"/>
+    <xacro:property name="laser_y" value="-0.3285"/>
+    <xacro:property name="laser_z" value="0.2"/>
+
+    <!-- TODO: 這是相機還是lidar? -->
+    <!-- <xacro:property name="camera_x" value="0.048"/>
+    <xacro:property name="camera_y" value="0"/>
+    <xacro:property name="camera_z" value="0.18"/> -->
+
+
+    <!-- 機器人底盤 -->
+    <link name="base_link">
+        <visual>
+            <origin xyz="0 0 0.18" rpy="0 0 0" />
+            <geometry>
+                <box size="${base_size_x} ${base_size_y} ${base_height}"/>
+            </geometry>
+            <material name="white">
+                <color rgba="1 1 1 1"/>
+            </material>
+        </visual>
+    </link> 
+
+    <!-- 輪子巨集 -->
+    <xacro:macro name="wheel" params="wheel_name x_offset y_offset">
+        <joint name="${wheel_name}_joint" type="continuous">
+            <origin xyz="${x_offset} ${y_offset} ${wheel_z}" rpy="1.57 0 0"/>
+            <parent link="base_link"/>
+            <child link="${wheel_name}_link"/>
+            <axis xyz="0 1 0"/>
+        </joint>
+
+        <transmission name="${wheel_name}_transmission">
+            <type>transmission_interface/SimpleTransmission</type>
+            <joint name="${wheel_name}_joint">
+                <hardwareInterface>hardware_interface/position</hardwareInterface>
+                <hardwareInterface>hardware_interface/velocity</hardwareInterface>
+                <hardwareInterface>hardware_interface/command</hardwareInterface>
+            </joint>
+        </transmission>
+
+        <link name="${wheel_name}_link">
+            <visual>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <cylinder radius="${wheel_radius}" length="${wheel_length}"/>
+                </geometry>
+                <material name="black">
+                    <color rgba="0 0 0 1"/>
+                </material>
+            </visual>
+        </link>
+    </xacro:macro>
+
+    <!-- 添加四個輪子 -->
+    <xacro:wheel wheel_name="left_wheel" x_offset="-${wheel_offset_x}" y_offset="${wheel_offset_y}"/>
+    <xacro:wheel wheel_name="right_wheel" x_offset="-${wheel_offset_x}" y_offset="-${wheel_offset_y}"/>
+    <xacro:wheel wheel_name="left_front" x_offset="${wheel_offset_x}" y_offset="${wheel_offset_y}"/>
+    <xacro:wheel wheel_name="right_front" x_offset="${wheel_offset_x}" y_offset="-${wheel_offset_y}"/>
+
+    <!-- ros2_control 設定 -->
+    <ros2_control name="MotorSet" type="system">
+        <hardware>
+            <plugin>motor_base::MotorSet</plugin>
+        </hardware>
+
+        <parameters>
+            <param name="wheel_radius">${wheel_radius}</param>
+            <param name="Lx">${Lx}</param>
+            <param name="Ly">${Ly}</param>
+        </parameters>
+
+        <joint name="left_front_joint">
+            <command_interface name="velocity"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+
+        <joint name="right_front_joint">
+            <command_interface name="velocity"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+
+        <joint name="left_wheel_joint">
+            <command_interface name="velocity"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+
+        <joint name="right_wheel_joint">
+            <command_interface name="velocity"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+    </ros2_control>
+
+
+    <!-- 定義 LiDAR（Laser） -->
+    <link name="laser">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <cylinder radius="0.05" length="0.1"/>
+            </geometry>
+            <material name="gray">
+                <color rgba="0.5 0.5 0.5 1"/>
+            </material>
+        </visual>
+    </link>
+
+    <joint name="base_to_laser" type="fixed">
+        <parent link="base_link"/>
+        <child link="laser"/>
+        <origin xyz="${laser_x} ${laser_y} ${laser_z}" rpy="0 0 0"/>
+    </joint>
+
+    <!-- 定義相機（Camera Link） -->
+    <!-- <link name="camera_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <box size="0.05 0.05 0.05"/>
+            </geometry>
+            <material name="black">
+                <color rgba="0 0 0 1"/>
+            </material>
+        </visual>
+    </link>
+
+    <joint name="base_to_camera" type="fixed">
+        <parent link="base_link"/>
+        <child link="camera_link"/>
+        <origin xyz="${camera_x} ${camera_y} ${camera_z}" rpy="0 0 0"/>
+    </joint> -->
+
+</robot>

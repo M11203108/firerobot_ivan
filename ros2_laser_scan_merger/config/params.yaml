@@ -1,0 +1,34 @@
+ros2_laser_scan_merger:
+  ros__parameters:
+    scanTopic1: /scan_front_filtered
+    scanTopic2: /scan_back_filtered
+    outputTopic: /lidar_merge_scan
+    # cloudFrameId: laser
+    target_frame: base_link
+
+    # 激光雷达1的参数
+    laser1XOff: -0.3
+    laser1YOff: -0.475
+    laser1ZOff: 0.176
+    laser1Alpha: 0.0
+    laser1AngleMin: -4.0
+    laser1AngleMax: 94.0
+    flip1: false
+    inverse1: true
+
+    # 激光雷达2的参数
+    laser2XOff: 0.3
+    laser2YOff: 0.475
+    laser2ZOff: 0.176
+    laser2Alpha: 180.0
+    laser2AngleMin: 0.0
+    laser2AngleMax: 94.0
+    flip2: false
+    inverse2: true
+
+    # 其他参数
+    use_sim_time: false
+    show1: true
+    show2: true
+    qos_overrides./parameter_events.publisher.depth: 1000
+    qos_overrides./parameter_events.publisher.reliability: best_effort

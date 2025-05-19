@@ -1,0 +1,9 @@
+<library path="motor_set_interface">
+  <class name="motor_base::MotorSet"
+         type="motor_base::MotorSet"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      Hardware interface for ZLAC8015D motor driver, mecanum wheel using ros2_control
+    </description>
+  </class>
+</library>

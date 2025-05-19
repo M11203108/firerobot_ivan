@@ -1,0 +1,14 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 200
+
+    imu_sensor_broadcaster:
+      type: imu_sensor_broadcaster/IMUSensorBroadcaster
+
+imu_sensor_broadcaster:
+  ros__parameters:
+    sensor_name: ""
+    frame_id: "camera_imu_optical_frame"
+    topic_name: "/imu/data"
+    publish_rate: 200
+    use_sim_time: false
