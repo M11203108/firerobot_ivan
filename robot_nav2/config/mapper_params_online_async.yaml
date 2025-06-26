@@ -14,6 +14,7 @@ slam_toolbox:
     map_frame: map
     base_frame: base_link
     scan_topic: /lidar_merge_scan
+    # scan_topic: /scan_front_filtered
     publish_tf: true
     mode: mapping #localization
 

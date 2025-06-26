@@ -86,8 +86,8 @@ def main(args=None):
         
     pub = node.create_publisher(Twist, 'cmd_vel', qos)
 
-    speed = 0.05
-    turn = 0.1
+    speed = 0.8
+    turn = 0.78
     x = 0
     y = 0
     z = 0

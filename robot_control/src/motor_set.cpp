@@ -114,9 +114,10 @@ hardware_interface::return_type MotorSet::read(const rclcpp::Time &time, const r
 
     double rpm_B = static_cast<double>(rpm_BC.rpm_R); //左輪
     double rpm_C = static_cast<double>(rpm_BC.rpm_L); //右輪
+    double gear_ratio = 1.96;
 
-    wheel_velocity_[0] = rpm_B * 2.0 * M_PI / 60.0;
-    wheel_velocity_[1] = rpm_C * 2.0 * M_PI / 60.0;
+    wheel_velocity_[0] = (rpm_B / gear_ratio) * 2.0 * M_PI / 60.0;
+    wheel_velocity_[1] = (rpm_C / gear_ratio) * 2.0 * M_PI / 60.0;
 
     double dt = period.seconds(); // 控制週期時間
 
@@ -139,8 +140,8 @@ hardware_interface::return_type MotorSet::read(const rclcpp::Time &time, const r
 hardware_interface::return_type MotorSet::write(const rclcpp::Time &, const rclcpp::Duration &)
 {
     // RCLCPP_INFO(rclcpp::get_logger("MotorSet"), "接收到速度指令：L %.3f, R %.3f", wheel_command_[0], wheel_command_[1]);
-    int16_t speed_B = static_cast<int16_t>(wheel_command_[0] * 60.0 / (2 * M_PI * wheel_radius_));
-    int16_t speed_C = static_cast<int16_t>(wheel_command_[1] * 60.0 / (2 * M_PI * wheel_radius_));
+    int16_t speed_B = static_cast<int16_t>(wheel_command_[0] * 60.0 / (2 * M_PI));
+    int16_t speed_C = static_cast<int16_t>(wheel_command_[1] * 60.0 / (2 * M_PI));
 
     int16_t speed_A = speed_B;  
     int16_t speed_D = speed_C;
