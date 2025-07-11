@@ -18,6 +18,23 @@
 // #include "sensor_msgs/msg/imu.hpp"
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
 
+struct PID {
+  double kp;
+  double ki;
+  double kd;
+  double integral;
+  double prev_err;
+};
+
+// ← 左右各一個，全域靜態或加到 MotorSet 成員都行
+static PID pid_L {1.25, 0.0005 , 0.08, 0.0, 0.0};   // 左輪群：前左 + 後左
+static PID pid_R {1.25, 0.0005 , 0.08, 0.0, 0.0};   // 右輪群：前右 + 後右
+
+// 取樣週期（跟 ros2_control period 同步）；如你用 50 Hz 就是 0.02 s
+static const double CONTROL_DT = 0.02;      // 秒
+static const double GEAR_RATIO = 1.96;      // 你馬達減速比
+static const double MAX_RPM    = 1500.0;    // 馬達極速，用來限幅
+
 namespace motor_base
 {
 
@@ -56,6 +73,21 @@ hardware_interface::CallbackReturn MotorSet::on_configure(const rclcpp_lifecycle
     // 初始化 ZLAC 馬達
     motorBC_->init("/dev/motorttyUSB0", 115200, 0x01, false);
     motorAD_->init("/dev/motorttyUSB1", 115200, 0x01, false);
+
+    const uint16_t ACC = 140;   // ms
+    const uint16_t DEC = 120;   // ms
+
+    // 前輪板
+    motorBC_->set_acc_time(ACC, "LEFT");
+    motorBC_->set_acc_time(ACC, "RIGHT");
+    motorBC_->set_decc_time(DEC, "LEFT");
+    motorBC_->set_decc_time(DEC, "RIGHT");
+
+    // 後輪板：先跟前輪同速，試車再視需要一起+10~20 ms
+    motorAD_->set_acc_time(ACC, "LEFT");
+    motorAD_->set_acc_time(ACC, "RIGHT");
+    motorAD_->set_decc_time(DEC, "LEFT");
+    motorAD_->set_decc_time(DEC, "RIGHT");
 
     if(motorBC_->enable() != 0 || motorAD_->enable() != 0)
     {
@@ -111,13 +143,19 @@ hardware_interface::return_type MotorSet::read(const rclcpp::Time &time, const r
 {
     // 讀 RPM 來計算速度
     MOT_DATA rpm_BC = motorBC_->get_rpm();
+    MOT_DATA rpm_AD = motorAD_->get_rpm();
 
     double rpm_B = static_cast<double>(rpm_BC.rpm_R); //左輪
     double rpm_C = static_cast<double>(rpm_BC.rpm_L); //右輪
+    double rpm_A = static_cast<double>(rpm_AD.rpm_R); //左輪
+    double rpm_D = static_cast<double>(rpm_AD.rpm_L); //右輪
     double gear_ratio = 1.96;
 
-    wheel_velocity_[0] = (rpm_B / gear_ratio) * 2.0 * M_PI / 60.0;
-    wheel_velocity_[1] = (rpm_C / gear_ratio) * 2.0 * M_PI / 60.0;
+    double rpm_left  = 0.5 * (rpm_A + rpm_B);
+    double rpm_right = 0.5 * (rpm_D+ rpm_C);
+
+    wheel_velocity_[0] = (rpm_left / gear_ratio) * 2.0 * M_PI / 60.0;
+    wheel_velocity_[1] = (rpm_right / gear_ratio) * 2.0 * M_PI / 60.0;
 
     double dt = period.seconds(); // 控制週期時間
 
@@ -137,17 +175,39 @@ hardware_interface::return_type MotorSet::read(const rclcpp::Time &time, const r
 }
 
 // 發送馬達速度函式，每個控制週期會呼叫，將速度指令轉成RPM發送給馬達
-hardware_interface::return_type MotorSet::write(const rclcpp::Time &, const rclcpp::Duration &)
+hardware_interface::return_type MotorSet::write(const rclcpp::Time &, const rclcpp::Duration &period)
 {
     // RCLCPP_INFO(rclcpp::get_logger("MotorSet"), "接收到速度指令：L %.3f, R %.3f", wheel_command_[0], wheel_command_[1]);
-    int16_t speed_B = static_cast<int16_t>(wheel_command_[0] * 60.0 / (2 * M_PI));
-    int16_t speed_C = static_cast<int16_t>(wheel_command_[1] * 60.0 / (2 * M_PI));
+    int16_t cmd_rpm_L = static_cast<int16_t>(wheel_command_[0] * 60.0 / (2 * M_PI));
+    int16_t cmd_rpm_R = static_cast<int16_t>(wheel_command_[1] * 60.0 / (2 * M_PI));
 
-    int16_t speed_A = speed_B;  
-    int16_t speed_D = speed_C;
+    int16_t act_rpm_L = static_cast<int16_t>(wheel_velocity_[0] * 60.0 / (2 * M_PI));
+    int16_t act_rpm_R = static_cast<int16_t>(wheel_velocity_[1] * 60.0 / (2 * M_PI));
 
-    motorBC_->set_double_rpm(speed_C, speed_B);
-    motorAD_->set_double_rpm(speed_D, speed_A);
+    double dt = period.seconds();
+
+    auto pid_step = [dt](PID &c, double ref, double meas){
+        double err = ref - meas;
+        c.integral  += err * dt;
+        double deriv = (err - c.prev_err) / dt;
+        c.prev_err   = err;
+        return c.kp * err + c.ki * c.integral + c.kd * deriv;
+    };
+
+    double out_L = pid_step(pid_L, cmd_rpm_L, act_rpm_L);
+    double out_R = pid_step(pid_R, cmd_rpm_R, act_rpm_R);
+
+    auto clamp = [](double v){
+        if (v >  MAX_RPM) return  MAX_RPM;
+        if (v < -MAX_RPM) return -MAX_RPM;
+        return v;
+    };
+
+    int16_t rpm_L = static_cast<int16_t>(clamp(out_L));
+    int16_t rpm_R = static_cast<int16_t>(clamp(out_R));
+
+    motorBC_->set_double_rpm(rpm_R, rpm_L);
+    motorAD_->set_double_rpm(rpm_R, rpm_L);
 
     // RCLCPP_DEBUG(rclcpp::get_logger("MotorSet"), "Sent RPM: A: %d, B: %d, C: %d, D: %d",
     //     speed_A, speed_B, speed_C, speed_D);

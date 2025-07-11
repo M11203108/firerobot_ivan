@@ -4,6 +4,19 @@ from geometry_msgs.msg import PoseStamped
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 import json
 import sys
+import threading
+
+# 加在開頭 main() 前面
+cancel_flag = False
+
+def listen_for_cancel():
+    global cancel_flag
+    print("👉 請輸入 'c' 並按 Enter 可取消導航")
+    while True:
+        user_input = input()
+        if user_input.lower() == 'c':
+            cancel_flag = True
+            break
 
 def main():
     rclpy.init()
@@ -37,10 +50,17 @@ def main():
 
     navigator.goToPose(goal_pose)
 
+    cancel_thread = threading.Thread(target=listen_for_cancel, daemon=True)
+    cancel_thread.start()
+
     while not navigator.isTaskComplete():
         feedback = navigator.getFeedback()
         if feedback:
             print(f'🚗 距離剩餘: {feedback.distance_remaining:.2f} meters')
+        if cancel_flag:
+            print('🚫 導航被取消，正在停止...')
+            navigator.cancelTask()
+            break
 
     result = navigator.getResult()
     if result == TaskResult.SUCCEEDED:

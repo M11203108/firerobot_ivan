@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+from tf_transformations import quaternion_from_euler
 
 def load_map(yaml_path, pgm_path):
     with open(yaml_path, 'r') as f:
@@ -105,21 +106,21 @@ def draw_result_map(map_img, resolution, origin, fire_pos, robot_pos, target_pos
     ax.imshow(map_img, cmap='gray', extent=extent, origin='upper')  # ← 這裡關鍵
 
     # 標示點位
-    ax.plot(fire_pos[0], fire_pos[1], 'ro', label='🔥 Fire Point')
-    ax.plot(robot_pos[0], robot_pos[1], 'bo', label='🤖 Robot Start')
-    ax.plot(target_pos[0], target_pos[1], 'yo', markersize=8, label='✅ Target Point')
+    ax.plot(fire_pos[0], fire_pos[1], 'ro', label=' Fire Point')
+    ax.plot(robot_pos[0], robot_pos[1], 'bo', label=' Robot Start')
+    ax.plot(target_pos[0], target_pos[1], 'yo', markersize=8, label=' Target Point')
 
     # 畫出圓周點（小綠點）
     # if valid_points:
     #     valid_x = [pt[0] for pt in valid_points]
     #     valid_y = [pt[1] for pt in valid_points]
-    #     ax.plot(valid_x, valid_y, 'go', markersize=4, label='🟢 Valid Points')
+    #     ax.plot(valid_x, valid_y, 'go', markersize=4, label=' Valid Points')
 
     # # 畫出無效點（小紅點）
     # if invalid_points:
     #     invalid_x = [pt[0] for pt in invalid_points]
     #     invalid_y = [pt[1] for pt in invalid_points]
-    #     ax.plot(invalid_x, invalid_y, 'ro', markersize=4, label='🔴 Invalid Points')
+    #     ax.plot(invalid_x, invalid_y, 'ro', markersize=4, label=' Invalid Points')
 
     # 標題與軸標籤
     ax.set_title('Map with Real-World Coordinates')
@@ -132,8 +133,8 @@ def draw_result_map(map_img, resolution, origin, fire_pos, robot_pos, target_pos
 
 def main():
     # 替換為你的地圖路徑
-    yaml_path = "/home/robot/ivan_ws/src/robot_nav2/maps/map.yaml"
-    pgm_path = "/home/robot/ivan_ws/src/robot_nav2/maps/map.pgm"
+    yaml_path = "/home/robot/ivan_ws/src/robot_nav2/maps/map_gym0629.yaml"
+    pgm_path = "/home/robot/ivan_ws/src/robot_nav2/maps/map_gym0629.pgm"
     
     # 載入地圖與資訊
     img, resolution, origin = load_map(yaml_path, pgm_path)  # 改成 False
@@ -141,7 +142,7 @@ def main():
     print(f"解析度: {resolution}")
     print(f"原點: {origin}")
     # 假設熱點位置（世界座標）
-    hotspot_world = (4.26, -0.73)  # 單位：meter
+    hotspot_world = (14.0, 6.0)  # 單位：meter
     robot_origin_world = (0, 0)  # 單位：meter
 
     circle_points = generate_circle_points(hotspot_world, radius=3.0, num_points=72)
@@ -160,7 +161,12 @@ def main():
     best_point = find_nearest_navigable_point(valid_points, robot_origin_world, img, origin, resolution)
 
     if best_point:
-        print(f"✅ 找到的最佳導航點: {best_point}")
+        # 計算朝向火源的 orientation
+        dx = hotspot_world[0] - best_point[0]
+        dy = hotspot_world[1] - best_point[1]
+        yaw = math.atan2(dy, dx)
+        qx, qy, qz, qw = quaternion_from_euler(0, 0, yaw)
+        print(f"✅ 找到的最佳導航點: {best_point, '朝向火源的四元數:', (qx, qy, qz, qw)}")
         draw_result_map(img, resolution, origin, hotspot_world, robot_origin_world, best_point, valid_points, invalid_points)
     else:
         print("❌ 沒有找到可導航的點")
