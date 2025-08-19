@@ -61,20 +61,13 @@ class Mission:
         self.__setMode(self.WAIT_MODE)
         self.controller.setZeroVelocity()
 
-
-    def navigateMission(self):
-        """
-        導航任務
-        """
-        self.node.get_logger().info("[flow1]導航開啟")
-
     
     def run_find_3m(self):
         """
         這個函數會呼叫 find_3m.py 的功能
         """
         # 使用 subprocess 執行 find_3m.py
-        self.node.get_logger().info("[flow1]找最佳導航點")
+        print("[flow1]找最佳導航點")
         json_path = "/home/robot/ivan_ws/src/robot_nav2/src/fire_target.json"
         process = subprocess.Popen(["ros2", "run", "robot_nav2", "fire_point_node.py"])
 
@@ -115,30 +108,27 @@ class Mission:
             imu_process.terminate()
             return False
         
-    def robot_find_fire(self):
+    def flow1(self):
         """
-        這個函數會呼叫 找火源
+        滅火流程
+        找點定位 waypoint --> 導航過去
         """
-        self.node.get_logger().info("[flow1] 🔍 找火源")
+        print("[flow1] 🔥 滅火流程開始")
+        pose = self.run_find_3m()
+        if pose is None:
+            print("[flow1] ❌ 找點失敗，流程結束")
+            return False
+        result = self.run_waypoint_node()
+        if not result:
+            print("[flow1] ❌ 導航失敗，流程結束")
+            return False
+        print("[flow1] ✅ 滅火流程結束")
+    
 
-    def nozzel_point(self):
-        """
-        這個函數會呼叫 nozzel控制
-        """
-        self.node.get_logger().info("[flow1] 🔫 噴頭點位")
-        # tra_process = subprocess.Popen(["ros2", "run", "robot_control", "spray_trajectories.py"]) #求出噴頭角度
+if __name__ == "__main__":
+    rclpy.init()
+    node = Node("mission_node")
+    mission = Mission(node)
+    mission.flow1()
+    rclpy.shutdown()
 
-    def nozzel_move(self):
-        """
-        這個函數會呼叫 nozzel控制
-        """
-        self.node.get_logger().info("[flow1]💦噴頭移動")
-        # nozzel_process = subprocess.Popen(["ros2", "run", "robot_control", "main_new.py"]) #噴頭控制
-        # spray_process = subprocess.Popen(["ros2", "run", "robot_control", "open.py"]) #開啟抽水馬達io 
-
-    def robot_goback(self):
-        """
-        這個函數會呼叫 返回原點
-        """
-        self.node.get_logger().info("[flow1] 🔙 返回原點")
-        # goback_process = subprocess.Popen(["ros2", "run", "robot_control", "goback_node.py"]) #要改位置

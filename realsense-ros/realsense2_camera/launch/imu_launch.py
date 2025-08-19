@@ -20,6 +20,7 @@ def generate_launch_description():
                 'enable_infra': False,
                 'enable_infra1': False,
                 'enable_infra2': False,
+                
                 'enable_gyro': True,
                 'enable_accel': True,
                 'unite_imu_method': 2,  # linear_interpolation

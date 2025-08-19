@@ -25,8 +25,39 @@ endif()
 
 install(
   PROGRAMS
-    src/fire_point_node.py
     src/waypoint_node.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  PROGRAMS
+    src/waypoint_back.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  PROGRAMS
+    src/fire_point_node.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME fire_point_node
+)
+
+install(
+  PROGRAMS
+    src/fire_point_node.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  PROGRAMS
+    src/robot_mission0731.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME robot_mission
+)
+
+install(
+  PROGRAMS
+    src/robot_mission_rp.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

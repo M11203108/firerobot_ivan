@@ -35,6 +35,10 @@ static const double CONTROL_DT = 0.02;      // 秒
 static const double GEAR_RATIO = 1.96;      // 你馬達減速比
 static const double MAX_RPM    = 1500.0;    // 馬達極速，用來限幅
 
+// ---- Stop mode config ----
+static const double EPS_RPM       = 1.0;
+static const double STOP_HOLD_SEC = 0.3;
+
 namespace motor_base
 {
 
@@ -185,6 +189,49 @@ hardware_interface::return_type MotorSet::write(const rclcpp::Time &, const rclc
     int16_t act_rpm_R = static_cast<int16_t>(wheel_velocity_[1] * 60.0 / (2 * M_PI));
 
     double dt = period.seconds();
+
+    // ---- Stop Mode 
+    static double stop_hold_elapsed = 0.0;
+    static bool   stop_active = false;
+
+    if (std::fabs(cmd_rpm_L) <= EPS_RPM) cmd_rpm_L = 0; // snap-to-zero
+    if (std::fabs(cmd_rpm_R) <= EPS_RPM) cmd_rpm_R = 0;
+
+    bool ref_near_zero  = (std::fabs(cmd_rpm_L) <= EPS_RPM) && (std::fabs(cmd_rpm_R) < EPS_RPM);
+    bool meas_near_zero = (std::fabs(act_rpm_L) <= EPS_RPM) && (std::fabs(act_rpm_R) < EPS_RPM);
+
+    // 先記住舊狀態，等下用來做「離開停車模式」的導數抑制
+    bool was_stop_active = stop_active;
+
+    if (ref_near_zero && meas_near_zero) {
+        stop_hold_elapsed += dt;
+
+        if (!stop_active && stop_hold_elapsed >= STOP_HOLD_SEC) {
+            stop_active = true;
+
+            pid_L.integral = 0.0;  pid_R.integral = 0.0;
+            pid_L.prev_err = 0.0;  pid_R.prev_err = 0.0;
+        }
+    } else {
+        stop_hold_elapsed = 0.0;
+        stop_active = false;
+    }
+
+    // 如果剛從停車模式切回一般模式，預置 prev_err = 目前誤差，避免 D 項第一次爆衝
+    if (!stop_active && was_stop_active) {
+        double err_L = static_cast<double>(cmd_rpm_L) - static_cast<double>(act_rpm_L);
+        double err_R = static_cast<double>(cmd_rpm_R) - static_cast<double>(act_rpm_R);
+        pid_L.prev_err = err_L;
+        pid_R.prev_err = err_R;
+    }
+
+    // 真正停車模式：直接輸出 0 並返回（略過 PID）
+    if (stop_active) {
+        motorBC_->set_double_rpm(0, 0);
+        motorAD_->set_double_rpm(0, 0);
+        return hardware_interface::return_type::OK;
+    }
+
 
     auto pid_step = [dt](PID &c, double ref, double meas){
         double err = ref - meas;

@@ -9,9 +9,9 @@ import threading
 
 # 加在開頭 main() 前面
 cancel_flag = False
-class WaypointNavigator(Node):
+class BackWaypointNavigator(Node):
     def __init__(self):
-        super().__init__('waypoint_node')
+        super().__init__('waypoint_back')
         self.navigator = BasicNavigator()
         self.navigator.waitUntilNav2Active()
         self.navigate()
@@ -32,7 +32,7 @@ class WaypointNavigator(Node):
         print('✅ Nav2 已啟動，等待目標點...')
 
         try:
-            with open("/home/robot/ivan_ws/src/robot_nav2/src/fire_target.json", "r") as f:
+            with open("/home/robot/ivan_ws/src/robot_nav2/src/original_point.json", "r") as f:
                 data = json.load(f)
         except FileNotFoundError:
             print("❌ 找不到 fire_target.json")
@@ -84,7 +84,7 @@ class WaypointNavigator(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    waypoint_node = WaypointNavigator()
+    waypoint_node = BackWaypointNavigator()
     rclpy.spin(waypoint_node)
     waypoint_node.destroy_node()
     rclpy.shutdown()

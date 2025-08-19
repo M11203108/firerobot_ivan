@@ -111,16 +111,16 @@ def draw_result_map(map_img, resolution, origin, fire_pos, robot_pos, target_pos
     ax.plot(target_pos[0], target_pos[1], 'yo', markersize=8, label=' Target Point')
 
     # 畫出圓周點（小綠點）
-    # if valid_points:
-    #     valid_x = [pt[0] for pt in valid_points]
-    #     valid_y = [pt[1] for pt in valid_points]
-    #     ax.plot(valid_x, valid_y, 'go', markersize=4, label=' Valid Points')
+    if valid_points:
+        valid_x = [pt[0] for pt in valid_points]
+        valid_y = [pt[1] for pt in valid_points]
+        ax.plot(valid_x, valid_y, 'go', markersize=4, label=' Valid Points')
 
-    # # 畫出無效點（小紅點）
-    # if invalid_points:
-    #     invalid_x = [pt[0] for pt in invalid_points]
-    #     invalid_y = [pt[1] for pt in invalid_points]
-    #     ax.plot(invalid_x, invalid_y, 'ro', markersize=4, label=' Invalid Points')
+    # 畫出無效點（小紅點）
+    if invalid_points:
+        invalid_x = [pt[0] for pt in invalid_points]
+        invalid_y = [pt[1] for pt in invalid_points]
+        ax.plot(invalid_x, invalid_y, 'mo', markersize=4, label=' Invalid Points')
 
     # 標題與軸標籤
     ax.set_title('Map with Real-World Coordinates')
@@ -133,8 +133,8 @@ def draw_result_map(map_img, resolution, origin, fire_pos, robot_pos, target_pos
 
 def main():
     # 替換為你的地圖路徑
-    yaml_path = "/home/robot/ivan_ws/src/robot_nav2/maps/map_gym0629.yaml"
-    pgm_path = "/home/robot/ivan_ws/src/robot_nav2/maps/map_gym0629.pgm"
+    yaml_path = "/home/robot/ivan_ws/src/robot_nav2/maps/map1.yaml"
+    pgm_path = "/home/robot/ivan_ws/src/robot_nav2/maps/map1.pgm"
     
     # 載入地圖與資訊
     img, resolution, origin = load_map(yaml_path, pgm_path)  # 改成 False
@@ -142,10 +142,10 @@ def main():
     print(f"解析度: {resolution}")
     print(f"原點: {origin}")
     # 假設熱點位置（世界座標）
-    hotspot_world = (14.0, 6.0)  # 單位：meter
+    hotspot_world = (7.915721416473389, 4.730291366577148)  # 單位：meter 2 (13.449383735656738, 6.510931491851807)
     robot_origin_world = (0, 0)  # 單位：meter
 
-    circle_points = generate_circle_points(hotspot_world, radius=3.0, num_points=72)
+    circle_points = generate_circle_points(hotspot_world, radius=3.5, num_points=72)
 
     valid_points = []
     invalid_points = []

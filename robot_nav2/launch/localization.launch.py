@@ -31,7 +31,7 @@ def generate_launch_description():
     my_param_dir = os.path.join(my_nav_dir, 'config')
     my_param_file = 'nav2_param.yaml'
     my_map_dir = os.path.join(my_nav_dir, 'maps')
-    my_map_file = 'map_gym0708.yaml'
+    my_map_file = 'map1.yaml'
     
     namespace = LaunchConfiguration('namespace')
     map_yaml_file = LaunchConfiguration('map')

@@ -15,14 +15,15 @@ class FirePointNode(Node):
     def __init__(self):
         super().__init__('fire_point_node')
 
-        yaml_path = "/home/robot/ivan_ws/src/robot_nav2/maps/map.yaml"
-        pgm_path = "/home/robot/ivan_ws/src/robot_nav2/maps/map.pgm"
+        yaml_path = "/home/robot/ivan_ws/src/robot_nav2/maps/map1.yaml"
+        pgm_path = "/home/robot/ivan_ws/src/robot_nav2/maps/map1.pgm"
 
         # 讀取地圖
         self.map_img, self.resolution, self.origin = self.load_map(yaml_path, pgm_path)
 
         # 機器人初始位置
         self.robot_pos = (0.0, 0.0)
+        self.best_pose = None
 
 
         #訂閱火源
@@ -118,7 +119,7 @@ class FirePointNode(Node):
         temp = msg.temperature
 
         # 產生圓周點
-        circle_points = self.generate_circle_points(hotspot_world, radius=3.0, num_points=72)
+        circle_points = self.generate_circle_points(hotspot_world, radius=3.5, num_points=72)
 
         valid_points = []
         invalid_points = []
@@ -157,6 +158,8 @@ class FirePointNode(Node):
             with open("/home/robot/ivan_ws/src/robot_nav2/src/fire_target.json", "w") as f:
                 json.dump(save_data, f)
             self.get_logger().info("💾 已將導航點儲存到 /tmp/fire_target.json")
+
+            self.best_pose = save_data
         else:
             self.get_logger().info("❌ 沒有找到可導航的點")
 

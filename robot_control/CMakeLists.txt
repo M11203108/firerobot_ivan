@@ -56,7 +56,20 @@ install(
 
 install(PROGRAMS
   src/teleop_twist_keyboard_stamped.py
-  src/cmd_vel_bridge.py
+  src/robot_mission.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  PROGRAMS
+    src/cmd_vel_bridge.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME cmd_vel_bridge
+)
+
+install(
+  PROGRAMS
+    src/cmd_tele.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
